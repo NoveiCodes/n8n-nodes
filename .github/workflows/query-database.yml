@@ -1,0 +1,47 @@
+name: Query Database
+on:
+  workflow_dispatch:
+    inputs:
+      query_type:
+        description: 'Type of query (search, filter, get_node, etc.)'
+        required: true
+        type: string
+      query_params:
+        description: 'Query parameters as JSON string'
+        required: true
+        type: string
+      callback_url:
+        description: 'n8n webhook URL to send results back'
+        required: false
+        type: string
+
+jobs:
+  query-database:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      
+      - name: Install dependencies
+        run: |
+          pip install requests
+      
+      - name: Process Query
+        id: process
+        run: |
+          python scripts/process_query.py \
+            --query-type "${{ github.event.inputs.query_type }}" \
+            --query-params '${{ github.event.inputs.query_params }}' \
+            --callback-url "${{ github.event.inputs.callback_url }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Output Results
+        run: |
+          echo "Query completed successfully"
+          echo "Results sent to callback URL or available in job output"
